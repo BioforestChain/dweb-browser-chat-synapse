@@ -1,34 +1,27 @@
 import logging
 import random
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Tuple
 
 from synapse.api.errors import (
     Codes,
-    InteractiveAuthIncompleteError,
     NotApprovedError,
     SynapseError,
-    ThreepidValidationError,
-    UnrecognizedRequestError,
 )
-from synapse.config.server import is_threepid_reserved
-from synapse.handlers.auth import AuthHandler
-from synapse.handlers.ui_auth import UIAuthSessionDataConstants
 from synapse.api.constants import (
     APP_SERVICE_REGISTRATION_TYPE,
     ApprovalNoticeMedium,
     LoginType,
 )
 from ._base import client_patterns, interactive_auth_handler
-from synapse.http.server import HttpServer, finish_request, respond_with_html
 from synapse.http.servlet import (
     RestServlet,
-    assert_params_in_dict,
     parse_json_object_from_request,
-    parse_string,
 )
+from synapse.http.server import HttpServer
 from synapse.http.site import SynapseRequest
 from synapse.util.hash import md5_string
 from synapse.util.libsodium import SignVerify
+from synapse.util.stringutils import random_string, random_string_with_symbols
 from synapse.types import JsonDict
 from synapse.rest.client.register import RegisterRestServlet
 
@@ -49,9 +42,10 @@ class RegisterDwebRestServlet(RegisterRestServlet):
 
     def __init__(self, hs: "HomeServer"):
         super().__init__(hs)
-        self.ratelimiter = hs.get_registration_ratelimiter()
+        self.registration_dweb_handler = hs.get_registration_dweb_handler()
         self._cache = hs.get_external_cache()
         self._cache_name = 'chall'
+        self._clock = hs.get_clock()
 
     @interactive_auth_handler
     async def on_POST(self, request: SynapseRequest) -> Tuple[int, JsonDict]:
@@ -70,48 +64,85 @@ class RegisterDwebRestServlet(RegisterRestServlet):
 
         key = md5_string(publicKey)
         challenge = await self._cache.get(self._cache_name,  key)
+        # for test
+        # challenge = "abc"
         if challenge is None:
             raise SynapseError(400, "Not found challenge")
 
-        if not SignVerify(challenge, sign, publicKey):
+        is_signed = SignVerify(challenge, sign, publicKey)
+        if not is_signed:
             raise SynapseError(400, "Signature verification failed")
         
         address = body.get('address')
         if address is None:
             raise SynapseError(400, "Invalid address")
         
+        # initial_device_display_name='172.30.95.85: Chrome on Windows'
+        # TODO 需要前端检测设备
+        initial_device_display_name = f'{client_addr}: on Dweb'
         # 检查是否新用户
+        userInfo = await self.store.get_user_by_wallet_address(address)
+        # is_exist = await self.registration_dweb_handler.is_exist_by_wallet_address(address)
+        if userInfo is None:
             # 新用户则新增
+            username = random_string(4) + str(self._clock.time_msec())
+            password = random_string_with_symbols(12)
+
+            cbody: JsonDict = {'username': username, 'password': password, 'initial_device_display_name': initial_device_display_name, 'client_addr': client_addr}
+            logging.info("body %s, %s:", password, cbody)
+
+            try:
+                result = await self._register(cbody)
+                logging.info('add new user %s: ', result)
+
+                await self.store.add_wallet_address_to_user(result.get('user_id'), address)
+            except Exception as err:
+                raise err
+
+            return 200, result
+
         # 返回access_token
+        user_id = userInfo.user_id.to_string()
+        (
+            device_id,
+            access_token,
+            valid_until_ms,
+            refresh_token,
+        ) = await self.registration_handler.register_device(
+            user_id,
+            device_id=None,
+            initial_display_name=initial_device_display_name,
+            is_guest=False,
+            is_appservice_ghost=False,
+            should_issue_refresh_token=False,
+        )
 
-        # access_token
-        # register_device
-        return 200, dict(sign=body.get('sign'))
-    
-    async def _register(self, body: JsonDict):
-        # body = parse_json_object_from_request(request)
-        body = JsonDict(username='test007', initial_device_display_name='172.30.95.85: Chrome ..on Windows', client_addr='172.30.95.85')
+        # registered_device_id = await self.device_handler.check_device_registered(
+        #     userInfo.get('user_id'),
+        #     device_id=None,
+        #     initial_device_display_name=initial_device_display_name,
+        #     auth_provider_id=None,
+        #     auth_provider_session_id=None,
+        # )
+        # access_token = self.auth_handler.create_access_token_for_user_id(
+        #     userInfo.get('user_id'),
+        #     device_id=registered_device_id,
+        #     valid_until_ms=None,
+        #     is_appservice_ghost=False,
+        #     refresh_token_id=None,)
 
-        # client_addr = request.getClientAddress().host
+        result: JsonDict = {
+            "user_id": user_id,
+            "wallet_address": address,
+            "home_server": self.hs.hostname,
+            "access_token": access_token,
+            "device_id": device_id,
+        }
+
+        return 200, result
+
+    async def _register(self, body: JsonDict) -> JsonDict:
         client_addr = body.get('client_addr')
-
-        # await self.ratelimiter.ratelimit(None, client_addr, update=False)
-
-        # kind = parse_string(request, "kind", default="user")
-
-        # if kind == "guest":
-        #     ret = await self._do_guest_registration(body, address=client_addr)
-        #     return ret
-        # elif kind != "user":
-        #     raise UnrecognizedRequestError(
-        #         f"Do not understand membership kind: {kind}",
-        #     )
-
-        # Check if the clients wishes for this registration to issue a refresh
-        # token.
-        # client_requested_refresh_tokens = body.get("refresh_token", False)
-        # if not isinstance(client_requested_refresh_tokens, bool):
-        #     raise SynapseError(400, "`refresh_token` should be true or false.")
 
         should_issue_refresh_token = False
 
@@ -167,18 +198,6 @@ class RegisterDwebRestServlet(RegisterRestServlet):
         session_id = None
         registered_user_id = None
         password_hash = None
-        # if session_id:
-        #     # if we get a registered user id out of here, it means we previously
-        #     # registered a user for this session, so we could just return the
-        #     # user here. We carry on and go through the auth checks though,
-        #     # for paranoia.
-        #     registered_user_id = await self.auth_handler.get_session_data(
-        #         session_id, UIAuthSessionDataConstants.REGISTERED_USER_ID, None
-        #     )
-        #     # Extract the previously-hashed password from the session.
-        #     password_hash = await self.auth_handler.get_session_data(
-        #         session_id, UIAuthSessionDataConstants.PASSWORD_HASH, None
-        #     )
 
         # Ensure that the username is valid.
         if desired_username is not None:
@@ -189,37 +208,9 @@ class RegisterDwebRestServlet(RegisterRestServlet):
                 inhibit_user_in_use_error=self._inhibit_user_in_use_error,
             )
 
-        auth_result = dict(LoginType.DUMMY, True)
-        params = dict(username='test007', initial_device_display_name='172.30.95.85: Chromexxxx on Windows')
+        auth_result = {LoginType.DUMMY: True}
+        params = dict(username=body.get('username'), initial_device_display_name=body.get('initial_device_display_name'))
         session_id = None
-
-        # Check if the user-interactive authentication flows are complete, if
-        # not this will raise a user-interactive auth error.
-        # try:
-        #     auth_result, params, session_id = await self.auth_handler.check_ui_auth(
-        #         self._registration_flows,
-        #         request,
-        #         body,
-        #         "register a new account",
-        #     )
-        # except InteractiveAuthIncompleteError as e:
-        #     # The user needs to provide more steps to complete auth.
-        #     #
-        #     # Hash the password and store it with the session since the client
-        #     # is not required to provide the password again.
-        #     #
-        #     # If a password hash was previously stored we will not attempt to
-        #     # re-hash and store it for efficiency. This assumes the password
-        #     # does not change throughout the authentication flow, but this
-        #     # should be fine since the data is meant to be consistent.
-        #     if not password_hash and password:
-        #         password_hash = await self.auth_handler.hash(password)
-        #         await self.auth_handler.set_session_data(
-        #             e.session_id,
-        #             UIAuthSessionDataConstants.PASSWORD_HASH,
-        #             password_hash,
-        #         )
-        #     raise
 
         if registered_user_id is not None:
             logger.info(
@@ -276,21 +267,6 @@ class RegisterDwebRestServlet(RegisterRestServlet):
                 address=client_addr,
                 user_agent_ips=entries,
             )
-            # Necessary due to auth checks prior to the threepid being
-            # written to the db
-            # if threepid:
-            #     if is_threepid_reserved(
-            #         self.hs.config.server.mau_limits_reserved_threepids, threepid
-            #     ):
-            #         await self.store.upsert_monthly_active_user(registered_user_id)
-
-            # Remember that the user account has been registered (and the user
-            # ID it was registered with, since it might not have been specified).
-            # await self.auth_handler.set_session_data(
-            #     session_id,
-            #     UIAuthSessionDataConstants.REGISTERED_USER_ID,
-            #     registered_user_id,
-            # )
 
             registered = True
 
@@ -301,22 +277,6 @@ class RegisterDwebRestServlet(RegisterRestServlet):
         )
 
         if registered:
-            # Check if a token was used to authenticate registration
-            # registration_token = await self.auth_handler.get_session_data(
-            #     session_id,
-            #     UIAuthSessionDataConstants.REGISTRATION_TOKEN,
-            # )
-            # if registration_token:
-            #     # Increment the `completed` counter for the token
-            #     await self.store.use_registration_token(registration_token)
-            #     # Indicate that the token has been successfully used so that
-            #     # pending is not decremented again when expiring old UIA sessions.
-            #     await self.store.mark_ui_auth_stage_complete(
-            #         session_id,
-            #         LoginType.REGISTRATION_TOKEN,
-            #         True,
-            #     )
-
             await self.registration_handler.post_registration_actions(
                 user_id=registered_user_id,
                 auth_result=auth_result,
@@ -329,7 +289,7 @@ class RegisterDwebRestServlet(RegisterRestServlet):
                     approval_notice_medium=ApprovalNoticeMedium.NONE,
                 )
 
-        return 200, return_dict
+        return return_dict
 
 # 生成签名challenge
 class RegisterDwebChallenge(RestServlet):

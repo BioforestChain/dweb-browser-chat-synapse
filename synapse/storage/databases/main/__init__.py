@@ -67,6 +67,7 @@ from .push_rule import PushRuleStore
 from .pusher import PusherStore
 from .receipts import ReceiptsStore
 from .registration import RegistrationStore
+from .registration_dweb import RegistrationDwebStore
 from .rejections import RejectionsStore
 from .relations import RelationsStore
 from .room import RoomStore
@@ -115,6 +116,7 @@ class DataStore(
     DeviceStore,
     RoomMemberStore,
     RoomStore,
+    RegistrationDwebStore,
     RegistrationStore,
     ProfileStore,
     PresenceStore,
