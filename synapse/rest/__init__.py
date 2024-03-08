@@ -46,6 +46,7 @@ from synapse.rest.client import (
     password_policy,
     presence,
     profile,
+    profile_dweb,
     push_rule,
     pusher,
     read_marker,
@@ -106,6 +107,7 @@ class ClientRestResource(JsonResource):
         room.register_servlets(hs, client_resource)
         login.register_servlets(hs, client_resource)
         profile.register_servlets(hs, client_resource)
+        profile_dweb.register_servlets(hs, client_resource)
         presence.register_servlets(hs, client_resource)
         directory.register_servlets(hs, client_resource)
         voip.register_servlets(hs, client_resource)

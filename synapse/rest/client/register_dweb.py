@@ -99,6 +99,7 @@ class RegisterDwebRestServlet(RegisterRestServlet):
             except Exception as err:
                 raise err
 
+            result["wallet_address"] = address
             return 200, result
 
         # 返回access_token
