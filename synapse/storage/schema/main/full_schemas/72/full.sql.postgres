@@ -941,6 +941,7 @@ CREATE TABLE user_threepids (
 );
 CREATE TABLE users (
     name text,
+    wallet_address text,
     password_hash text,
     creation_ts bigint,
     admin smallint DEFAULT 0 NOT NULL,
@@ -1288,6 +1289,7 @@ CREATE UNIQUE INDEX user_threepid_id_server_idx ON user_threepid_id_server USING
 CREATE INDEX user_threepids_medium_address ON user_threepids USING btree (medium, address);
 CREATE INDEX user_threepids_user_id ON user_threepids USING btree (user_id);
 CREATE INDEX users_creation_ts ON users USING btree (creation_ts);
+CREATE INDEX users_wallet_address ON users USING btree (wallet_address);
 CREATE INDEX users_have_local_media ON local_media_repository USING btree (user_id, created_ts);
 CREATE INDEX users_in_public_rooms_r_idx ON users_in_public_rooms USING btree (room_id);
 CREATE UNIQUE INDEX users_in_public_rooms_u_idx ON users_in_public_rooms USING btree (user_id, room_id);
