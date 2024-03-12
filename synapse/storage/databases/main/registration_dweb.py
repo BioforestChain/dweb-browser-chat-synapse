@@ -103,9 +103,6 @@ class RegistrationDwebBackgroundUpdateStore(RegistrationDwebWorkerStore):
     ):
         super().__init__(database, db_conn, hs)
 
-        self._clock = hs.get_clock()
-        self.config = hs.config
-
         # wallet_address实际是unique的，这里设置False是为了最小改动实现wallet_address逻辑
         # 所以wallet_address的唯一性需要代码来保证，而不是数据库约束
         self.db_pool.updates.register_background_index_update(
@@ -113,7 +110,6 @@ class RegistrationDwebBackgroundUpdateStore(RegistrationDwebWorkerStore):
             index_name="users_wallet_address",
             table="users",
             columns=["wallet_address"],
-            unique=False,  
         )
         
 class RegistrationDwebStore(RegistrationStore, RegistrationDwebBackgroundUpdateStore):
