@@ -39,7 +39,7 @@ class RegistrationDwebWorkerStore(RegistrationWorkerStore):
             txn.execute(
                 """
                 SELECT
-                    name, wallet_address, is_guest, admin, consent_version, consent_ts,
+                    name, wallet_address, public_key, is_guest, admin, consent_version, consent_ts,
                     consent_server_notice_sent, appservice_id, creation_ts, user_type,
                     deactivated, COALESCE(shadow_banned, FALSE) AS shadow_banned,
                     COALESCE(approved, TRUE) AS approved,
@@ -57,6 +57,7 @@ class RegistrationDwebWorkerStore(RegistrationWorkerStore):
             (
                 name,
                 waddress,
+                public_key,
                 is_guest,
                 admin,
                 consent_version,
@@ -73,6 +74,7 @@ class RegistrationDwebWorkerStore(RegistrationWorkerStore):
 
             return UserInfo(
                 wallet_address=waddress,
+                public_key=public_key,
                 appservice_id=appservice_id,
                 consent_server_notice_sent=consent_server_notice_sent,
                 consent_version=consent_version,
@@ -125,6 +127,7 @@ class RegistrationDwebStore(RegistrationStore, RegistrationDwebBackgroundUpdateS
         self,
         user_id: str,
         wallet_address: str,
+        public_key: str,
     ) -> str:
         """Adds an access token for the given user.
 
@@ -139,7 +142,7 @@ class RegistrationDwebStore(RegistrationStore, RegistrationDwebBackgroundUpdateS
         await self.db_pool.simple_update(
             "users",
             keyvalues={"name": user_id},
-            updatevalues={"wallet_address": wallet_address},
+            updatevalues={"wallet_address": wallet_address,"public_key":public_key},
             desc="add_access_token_to_user",
         )
 

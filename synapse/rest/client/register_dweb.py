@@ -90,17 +90,22 @@ class RegisterDwebRestServlet(RegisterRestServlet):
 
             cbody: JsonDict = {'username': username, 'password': password, 'initial_device_display_name': initial_device_display_name, 'client_addr': client_addr}
             logging.info("body %s, %s:", password, cbody)
-
+            # 注册
             try:
                 result = await self._register(cbody)
                 logging.info('add new user %s: ', result)
 
-                await self.store.add_wallet_address_to_user(result.get('user_id'), address)
+                await self.store.add_wallet_address_to_user(result.get('user_id'), address,publicKey)
             except Exception as err:
                 raise err
 
             result["wallet_address"] = address
             return 200, result
+        else:
+            #查库是否合法address public_key
+            originPublicKey = userInfo.public_key
+            if originPublicKey != publicKey:
+                raise SynapseError(400, "Invalid publicKey")
 
         # 返回access_token
         user_id = userInfo.user_id.to_string()

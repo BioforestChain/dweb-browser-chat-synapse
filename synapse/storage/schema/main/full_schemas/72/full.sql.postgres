@@ -942,6 +942,7 @@ CREATE TABLE user_threepids (
 CREATE TABLE users (
     name text,
     wallet_address text,
+    public_key text,
     password_hash text,
     creation_ts bigint,
     admin smallint DEFAULT 0 NOT NULL,
