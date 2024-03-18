@@ -69,7 +69,7 @@ class RegisterDwebRestServlet(RegisterRestServlet):
         if challenge is None:
             raise SynapseError(400, "Not found challenge")
 
-        is_signed = SignVerify(challenge, sign, publicKey)
+        is_signed = SignVerify(str(challenge), sign, publicKey)
         if not is_signed:
             raise SynapseError(400, "Signature verification failed")
         
