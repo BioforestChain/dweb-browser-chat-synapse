@@ -140,7 +140,7 @@ class RegistrationDwebStore(RegistrationStore, RegistrationDwebBackgroundUpdateS
             "users",
             keyvalues={"name": user_id},
             updatevalues={"wallet_address": wallet_address},
-            desc="add_access_token_to_user",
+            desc="add_wallet_address_to_user",
         )
 
         return wallet_address
