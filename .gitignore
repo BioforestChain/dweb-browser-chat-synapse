@@ -31,11 +31,11 @@ __pycache__/
 /env/
 /.venv*/
 /homeserver*.yaml
+/log_config.yaml
 /logs
 /media_store/
 /uploads
 /homeserver-config-overrides.d
-/log_config.yaml
 
 # For direnv users
 /.envrc
