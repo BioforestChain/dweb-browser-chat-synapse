@@ -976,12 +976,12 @@ class StreamToken:
         return attr.evolve(self, **{key.value: new_value})
 
     @overload
-    def get_field(self, key: Literal[StreamKeyType.ROOM]) -> RoomStreamToken:
-        ...
+    def get_field(self, key: Literal[StreamKeyType.ROOM]) -> RoomStreamToken: ...
 
     @overload
-    def get_field(self, key: Literal[StreamKeyType.RECEIPT]) -> MultiWriterStreamToken:
-        ...
+    def get_field(
+        self, key: Literal[StreamKeyType.RECEIPT]
+    ) -> MultiWriterStreamToken: ...
 
     @overload
     def get_field(
@@ -995,14 +995,12 @@ class StreamToken:
             StreamKeyType.TYPING,
             StreamKeyType.UN_PARTIAL_STATED_ROOMS,
         ],
-    ) -> int:
-        ...
+    ) -> int: ...
 
     @overload
     def get_field(
         self, key: StreamKeyType
-    ) -> Union[int, RoomStreamToken, MultiWriterStreamToken]:
-        ...
+    ) -> Union[int, RoomStreamToken, MultiWriterStreamToken]: ...
 
     def get_field(
         self, key: StreamKeyType
@@ -1146,8 +1144,6 @@ class UserInfo:
 
     Attributes:
         user_id:  ID of the user.
-        wallet_address: Address of dweb wallet application
-        public_key: public_key of dweb user
         appservice_id:  Application service ID that created this user.
         consent_server_notice_sent:  Version of policy documents the user has been sent.
         consent_version:  Version of policy documents the user has consented to.
@@ -1163,8 +1159,6 @@ class UserInfo:
     """
 
     user_id: UserID
-    wallet_address: Optional[str]
-    public_key: Optional[str]
     appservice_id: Optional[int]
     consent_server_notice_sent: Optional[str]
     consent_version: Optional[str]
@@ -1181,7 +1175,6 @@ class UserInfo:
 
 class UserProfile(TypedDict):
     user_id: str
-    wallet_address: Optional[str]
     display_name: Optional[str]
     avatar_url: Optional[str]
 

@@ -67,7 +67,6 @@ from .push_rule import PushRuleStore
 from .pusher import PusherStore
 from .receipts import ReceiptsStore
 from .registration import RegistrationStore
-from .registration_dweb import RegistrationDwebStore
 from .rejections import RejectionsStore
 from .relations import RelationsStore
 from .room import RoomStore
@@ -116,7 +115,6 @@ class DataStore(
     DeviceStore,
     RoomMemberStore,
     RoomStore,
-    RegistrationDwebStore,
     RegistrationStore,
     ProfileStore,
     PresenceStore,
@@ -178,7 +176,7 @@ class DataStore(
         user_id: Optional[str] = None,
         name: Optional[str] = None,
         guests: bool = True,
-        deactivated: bool = False,
+        deactivated: Optional[bool] = None,
         admins: Optional[bool] = None,
         order_by: str = UserSortOrder.NAME.value,
         direction: Direction = Direction.FORWARDS,
@@ -234,8 +232,11 @@ class DataStore(
             if not guests:
                 filters.append("is_guest = 0")
 
-            if not deactivated:
-                filters.append("deactivated = 0")
+            if deactivated is not None:
+                if deactivated:
+                    filters.append("deactivated = 1")
+                else:
+                    filters.append("deactivated = 0")
 
             if not locked:
                 filters.append("locked IS FALSE")

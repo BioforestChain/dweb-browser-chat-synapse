@@ -46,13 +46,11 @@ from synapse.rest.client import (
     password_policy,
     presence,
     profile,
-    profile_dweb,
     push_rule,
     pusher,
     read_marker,
     receipts,
     register,
-    register_dweb,
     relations,
     rendezvous,
     report_event,
@@ -109,7 +107,6 @@ class ClientRestResource(JsonResource):
         room.register_servlets(hs, client_resource)
         login.register_servlets(hs, client_resource)
         profile.register_servlets(hs, client_resource)
-        profile_dweb.register_servlets(hs, client_resource)
         presence.register_servlets(hs, client_resource)
         directory.register_servlets(hs, client_resource)
         voip.register_servlets(hs, client_resource)
@@ -122,7 +119,6 @@ class ClientRestResource(JsonResource):
         filter.register_servlets(hs, client_resource)
         account.register_servlets(hs, client_resource)
         register.register_servlets(hs, client_resource)
-        register_dweb.register_servlets(hs, client_resource)
         if is_main_process:
             auth.register_servlets(hs, client_resource)
         receipts.register_servlets(hs, client_resource)

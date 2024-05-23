@@ -36,10 +36,3 @@ def sha256_and_url_safe_base64(input_text: str) -> str:
     """
     digest = hashlib.sha256(input_text.encode()).digest()
     return unpaddedbase64.encode_base64(digest, urlsafe=True)
-
-def md5_string(input_string):
-    mo = hashlib.md5()
-
-    mo.update(input_string.encode('utf-8'))
-
-    return mo.hexdigest()
