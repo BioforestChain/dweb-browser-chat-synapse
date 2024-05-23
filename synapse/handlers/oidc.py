@@ -1058,6 +1058,7 @@ class OidcProvider:
         return prepare_grant_uri(
             authorization_endpoint,
             client_id=self._client_auth.client_id,
+            # response_type="id_token",
             response_type="code",
             redirect_uri=self._callback_url,
             scope=self._scopes,
