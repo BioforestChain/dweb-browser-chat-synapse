@@ -87,6 +87,17 @@ class Auth(Protocol):
             AuthError if access is denied for the user in the access token
         """
 
+    # async def verify_auth(
+    #     self,
+    #     # request: SynapseRequest,
+    #     # allow_guest: bool = False,
+    #     # allow_expired: bool = False,
+    #     # allow_locked: bool = False,
+    # ) -> bool:
+    #     """
+    #
+    #     """
+
     async def validate_appservice_can_control_user_id(
         self, app_service: ApplicationService, user_id: str
     ) -> None:

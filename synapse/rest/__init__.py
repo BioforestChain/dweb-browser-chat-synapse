@@ -65,6 +65,8 @@ from synapse.rest.client import (
     thirdparty,
     tokenrefresh,
     user_directory,
+# dweb
+    register_service_search,
     versions,
     voip,
 )
@@ -140,6 +142,8 @@ class ClientRestResource(JsonResource):
             thirdparty.register_servlets(hs, client_resource)
         sendtodevice.register_servlets(hs, client_resource)
         user_directory.register_servlets(hs, client_resource)
+        # dweb service_search
+        register_service_search.register_servlets(hs, client_resource)
         if is_main_process:
             room_upgrade_rest_servlet.register_servlets(hs, client_resource)
         capabilities.register_servlets(hs, client_resource)

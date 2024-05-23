@@ -264,6 +264,9 @@ class BaseAuth:
         # This will always be set by the time Twisted calls us.
         assert request.args is not None
 
+        #dweb
+        #b'/_matrix/client/v3/dWeb_user_directory/search?search_term=abc'
+
         auth_headers = request.requestHeaders.getRawHeaders(b"Authorization")
         query_params = request.args.get(b"access_token")
         if auth_headers:

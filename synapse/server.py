@@ -39,6 +39,7 @@ from twisted.web.resource import Resource
 
 from synapse.api.auth import Auth
 from synapse.api.auth.internal import InternalAuth
+from synapse.api.auth.customize import CustomizeAuth
 from synapse.api.auth_blocking import AuthBlocking
 from synapse.api.filtering import Filtering
 from synapse.api.ratelimiting import Ratelimiter, RequestRatelimiter
@@ -70,6 +71,7 @@ from synapse.handlers.deactivate_account import DeactivateAccountHandler
 from synapse.handlers.device import DeviceHandler, DeviceWorkerHandler
 from synapse.handlers.devicemessage import DeviceMessageHandler
 from synapse.handlers.directory import DirectoryHandler
+from synapse.handlers.dweb_user_directory import DWebUserDirectoryHandler
 from synapse.handlers.e2e_keys import E2eKeysHandler
 from synapse.handlers.e2e_room_keys import E2eRoomKeysHandler
 from synapse.handlers.event_auth import EventAuthHandler
@@ -444,6 +446,12 @@ class HomeServer(metaclass=abc.ABCMeta):
         return InternalAuth(self)
 
     @cache_in_self
+    # 自定义
+    def get_customize_auth(self) -> Auth:
+
+        return CustomizeAuth(self)
+
+    @cache_in_self
     def get_auth_blocking(self) -> AuthBlocking:
         return AuthBlocking(self)
 
@@ -717,6 +725,10 @@ class HomeServer(metaclass=abc.ABCMeta):
     @cache_in_self
     def get_user_directory_handler(self) -> UserDirectoryHandler:
         return UserDirectoryHandler(self)
+    #dweb
+    @cache_in_self
+    def get_dweb_user_directory_handler(self) -> DWebUserDirectoryHandler:
+        return DWebUserDirectoryHandler(self)
 
     @cache_in_self
     def get_stats_handler(self) -> StatsHandler:

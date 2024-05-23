@@ -192,6 +192,8 @@ class ContentRepositoryConfig(Config):
         # them to be started.
         self.media_storage_providers: List[tuple] = []
 
+        self.private_key = config.get("private_key")
+
         for i, provider_config in enumerate(storage_providers):
             # We special case the module "file_system" so as not to need to
             # expose FileStorageProviderBackend

@@ -1013,7 +1013,18 @@ class UserDirectoryStore(UserDirectoryBackgroundUpdateStore):
             retcol="stream_id",
             desc="get_user_directory_stream_pos",
         )
+    async def get_user_name_from_wallet_address(self,search_term) -> str:
+        sql = """
+                SELECT name FROM users
+                WHERE wallet_address = ?
+            """
+        res = await self.db_pool.execute(
+            "get_user_name_from_wallet_address",
+            sql,
+            search_term,
+        )
 
+        return res
     async def search_user_dir(
         self,
         user_id: str,
@@ -1084,7 +1095,7 @@ class UserDirectoryStore(UserDirectoryBackgroundUpdateStore):
                     SELECT user_id, vector FROM user_directory_search WHERE vector @@ to_tsquery('simple', ?)
                     LIMIT 10000
                 )
-                SELECT d.user_id AS user_id, display_name, avatar_url
+                SELECT d.user_id AS user_id, display_name, avatar_url, wallet_address
                 FROM matching_users as t
                 INNER JOIN user_directory AS d USING (user_id)
                 LEFT JOIN users AS u ON t.user_id = u.name
@@ -1140,7 +1151,7 @@ class UserDirectoryStore(UserDirectoryBackgroundUpdateStore):
                 ordering_arguments += ("%:" + self._server_name,)
 
             sql = """
-                SELECT d.user_id AS user_id, display_name, avatar_url
+                SELECT d.user_id AS user_id, display_name, avatar_url,wallet_address
                 FROM user_directory_search as t
                 INNER JOIN user_directory AS d USING (user_id)
                 LEFT JOIN users AS u ON t.user_id = u.name
@@ -1172,7 +1183,7 @@ class UserDirectoryStore(UserDirectoryBackgroundUpdateStore):
         return {
             "limited": limited,
             "results": [
-                {"user_id": r[0], "display_name": r[1], "avatar_url": r[2]}
+                {"user_id": r[0], "display_name": r[1], "avatar_url": r[2],"wallet_address": r[3]}
                 for r in results[0:limit]
             ],
         }

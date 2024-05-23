@@ -118,6 +118,10 @@ class InternalAuth(BaseAuth):
 
         Once get_user_by_req has set up the opentracing span, this does the actual work.
         """
+        # if b"dWeb_user_directory" in request.uri:
+        #
+        #    print("dWeb_user_directory route")
+        # else:
         try:
             access_token = self.get_access_token_from_request(request)
 
